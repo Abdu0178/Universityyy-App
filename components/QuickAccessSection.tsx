@@ -1,0 +1,80 @@
+import React from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { COLORS } from "../constants/colors";
+
+export type QuickTarget = "Courses" | "Schedule" | "Grades" | "Profile";
+
+interface QuickAccessItem {
+  key: QuickTarget;
+  label: string;
+  icon: string;
+}
+
+const QUICK_ACCESS_ITEMS: QuickAccessItem[] = [
+  { key: "Courses", label: "Курстар", icon: "📚" },
+  { key: "Schedule", label: "Кесте", icon: "📅" },
+  { key: "Grades", label: "Бағалар", icon: "📊" },
+  { key: "Profile", label: "Профиль", icon: "👤" },
+];
+
+interface QuickAccessSectionProps {
+  onSelect: (target: QuickTarget) => void;
+}
+
+export default function QuickAccessSection({ onSelect }: QuickAccessSectionProps) {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.sectionTitle}>Жылдам қолжетімділік</Text>
+      <View style={styles.grid}>
+        {QUICK_ACCESS_ITEMS.map((item) => (
+          <TouchableOpacity
+            key={item.key}
+            style={styles.card}
+            activeOpacity={0.75}
+            onPress={() => onSelect(item.key)}
+          >
+            <Text style={styles.icon}>{item.icon}</Text>
+            <Text style={styles.label}>{item.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    marginTop: 8,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: COLORS.text,
+    marginHorizontal: 18,
+    marginBottom: 10,
+  },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginHorizontal: 18,
+    gap: 12,
+  },
+  card: {
+    width: "48%",
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
+    justifyContent: "center",
+    gap: 8,
+  },
+  icon: {
+    fontSize: 24,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: COLORS.text,
+  },
+});

@@ -1,5 +1,5 @@
-import {useLanguage} from "../localization/LanguageContext";
-import React from "react";
+import { useLanguage } from "../localization/LanguageContext";
+import React, { useState } from "react";
 
 import {
   SafeAreaView,
@@ -10,73 +10,98 @@ import {
   StyleSheet,
 } from "react-native";
 
-import {
-  Ionicons,
-} from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 
 import Header from "../components/Header";
+import QuickAccessSection, { QuickTarget } from "../components/QuickAccessSection";
+import NewsSection from "../components/NewsSection";
 
 import { COLORS } from "../constants/colors";
 
-export default function HomeScreen() {
-  const {t} = useLanguage();
+import CoursesScreen from "./CoursesScreen";
+import ScheduleScreen from "./ScheduleScreen";
+import GradesScreen from "./GradesScreen";
+import ProfileScreen from "./ProfileScreen";
+
+interface HomeScreenProps {
+  onNavigate?: (target: QuickTarget) => void;
+}
+
+export default function HomeScreen({ onNavigate }: HomeScreenProps) {
+  const { t } = useLanguage();
+  const [activeSubScreen, setActiveSubScreen] = useState<QuickTarget | null>(null);
+
+  const handleQuickSelect = (target: QuickTarget) => {
+    if (onNavigate) {
+      onNavigate(target);
+    } else {
+      setActiveSubScreen(target);
+    }
+  };
+
+  if (!onNavigate && activeSubScreen) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => setActiveSubScreen(null)}
+          activeOpacity={0.75}
+        >
+          <Ionicons name="arrow-back" size={20} color={COLORS.text} />
+          <Text style={styles.backText}>{t("Home")}</Text>
+        </TouchableOpacity>
+
+        <View style={styles.subScreenContainer}>
+          {activeSubScreen === "Courses" && <CoursesScreen />}
+          {activeSubScreen === "Schedule" && <ScheduleScreen />}
+          {activeSubScreen === "Grades" && <GradesScreen />}
+          {activeSubScreen === "Profile" && <ProfileScreen />}
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-
         <Header title={t("Home")} />
 
         {/* PROFILE CARD */}
 
         <View style={styles.profileCard}>
           <View style={styles.profileInfo}>
-
             <Text style={styles.greeting}>
               {t("Good morning \ud83d\udc4b")}
             </Text>
 
-            <Text style={styles.name}>
-              Ammer Ali
-            </Text>
+            <Text style={styles.name}>Ammer Ali</Text>
 
             <Text style={styles.course}>
               {t("Computer Science \u2022 3rd Year")}
             </Text>
-
           </View>
 
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              AA
-            </Text>
+            <Text style={styles.avatarText}>AA</Text>
           </View>
         </View>
 
         {/* TODAY */}
 
-        <Text style={styles.sectionTitle}>
-          {t("Today's Classes")}
-        </Text>
+        <Text style={styles.sectionTitle}>{t("Today's Classes")}</Text>
 
         <View style={styles.classCard}>
-
           <View style={styles.timeContainer}>
-            <Text style={styles.time}>
-              09:00
-            </Text>
+            <Text style={styles.time}>09:00</Text>
 
-            <Text style={styles.endTime}>
-              10:30
-            </Text>
+            <Text style={styles.endTime}>10:30</Text>
           </View>
 
           <View style={styles.classInfo}>
-            <Text style={styles.classTitle}>
-              {t("Digital Thinking")}
-            </Text>
+            <Text style={styles.classTitle}>{t("Digital Thinking")}</Text>
 
             <Text style={styles.classSubtitle}>
               {t("Room 204 \u2022 Dr. Ahmed")}
@@ -84,125 +109,19 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.nowBadge}>
-            <Text style={styles.nowText}>
-              {t("Now")}
-            </Text>
+            <Text style={styles.nowText}>{t("Now")}</Text>
           </View>
-
         </View>
 
         {/* NEWS */}
 
-        <Text style={styles.sectionTitle}>
-          {t("News")}
-        </Text>
-
-        <NewsCard
-          icon="📢"
-          title={t("FIBO University event is coming soon")}
-        />
-
-        <NewsCard
-          icon="🎓"
-          title={t("Psychology & Development Conference")}
-        />
-
-        <NewsCard
-          icon="🌙"
-          title={t("Eid Holidays Announcement")}
-        />
+        <NewsSection />
 
         {/* QUICK ACCESS */}
 
-        <Text style={styles.sectionTitle}>
-          {t("Quick Access")}
-        </Text>
-
-        <View style={styles.quickGrid}>
-
-          <QuickItem
-            icon="📚"
-            title={t("Courses")}
-          />
-
-          <QuickItem
-            icon="📅"
-            title={t("Schedule")}
-          />
-
-          <QuickItem
-            icon="📊"
-            title={t("Grades")}
-          />
-
-          <QuickItem
-            icon="👤"
-            title={t("Profile")}
-          />
-
-        </View>
-
+        <QuickAccessSection onSelect={handleQuickSelect} />
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-interface NewsCardProps {
-  icon: string;
-  title: string;
-}
-
-function NewsCard({
-  icon,
-  title,
-}: NewsCardProps) {
-  const {t} = useLanguage();
-  return (
-    <TouchableOpacity style={styles.newsCard}>
-      <View style={styles.newsImage}>
-        <Text style={styles.newsEmoji}>
-          {icon}
-        </Text>
-      </View>
-
-      <View style={styles.newsInfo}>
-        <Text style={styles.newsTitle}>
-          {title}
-        </Text>
-
-        <Text style={styles.newsDate}>
-          {t("Today • Universityy")}
-        </Text>
-      </View>
-
-      <Ionicons
-        name="chevron-forward"
-        size={17}
-        color="#AAA"
-      />
-    </TouchableOpacity>
-  );
-}
-
-interface QuickItemProps {
-  icon: string;
-  title: string;
-}
-
-function QuickItem({
-  icon,
-  title,
-}: QuickItemProps) {
-  return (
-    <TouchableOpacity style={styles.quickItem}>
-      <Text style={styles.quickIcon}>
-        {icon}
-      </Text>
-
-      <Text style={styles.quickTitle}>
-        {title}
-      </Text>
-    </TouchableOpacity>
   );
 }
 
@@ -219,11 +138,8 @@ const styles = StyleSheet.create({
   profileCard: {
     marginHorizontal: 18,
     padding: 18,
-
     borderRadius: 15,
-
     backgroundColor: COLORS.primary,
-
     flexDirection: "row",
     alignItems: "center",
   },
@@ -254,10 +170,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-
-    backgroundColor:
-      COLORS.primaryLight,
-
+    backgroundColor: COLORS.primaryLight,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -271,7 +184,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "800",
     color: COLORS.text,
-
     marginHorizontal: 20,
     marginTop: 22,
     marginBottom: 10,
@@ -281,9 +193,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 18,
     backgroundColor: COLORS.white,
     borderRadius: 13,
-
     padding: 14,
-
     flexDirection: "row",
     alignItems: "center",
   },
@@ -333,80 +243,24 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
-  newsCard: {
-    marginHorizontal: 18,
-    backgroundColor: COLORS.white,
-
-    borderRadius: 12,
-
-    padding: 10,
-    marginBottom: 8,
-
+  backButton: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
   },
 
-  newsImage: {
-    width: 58,
-    height: 58,
-
-    borderRadius: 9,
-
-    backgroundColor: "#F4E5F2",
-
-    justifyContent: "center",
-    alignItems: "center",
-
-    marginRight: 10,
-  },
-
-  newsEmoji: {
-    fontSize: 25,
-  },
-
-  newsInfo: {
-    flex: 1,
-  },
-
-  newsTitle: {
-    fontSize: 11,
-    fontWeight: "800",
+  backText: {
+    fontSize: 14,
+    fontWeight: "700",
     color: COLORS.text,
   },
 
-  newsDate: {
-    fontSize: 8,
-    color: COLORS.textLight,
-    marginTop: 7,
-  },
-
-  quickGrid: {
-    marginHorizontal: 18,
-
-    flexDirection: "row",
-    flexWrap: "wrap",
-
-    gap: 9,
-  },
-
-  quickItem: {
-    width: "48%",
-    height: 80,
-
-    backgroundColor: COLORS.white,
-
-    borderRadius: 12,
-
-    padding: 13,
-  },
-
-  quickIcon: {
-    fontSize: 27,
-  },
-
-  quickTitle: {
-    fontSize: 11,
-    fontWeight: "800",
-    marginTop: 5,
+  subScreenContainer: {
+    flex: 1,
   },
 });
