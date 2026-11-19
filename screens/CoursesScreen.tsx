@@ -1,5 +1,6 @@
+
 import { useLanguage } from "../localization/LanguageContext";
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 import {
   SafeAreaView,
@@ -9,15 +10,17 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
-
 import Header from "../components/Header";
-
 import { COLORS } from "../constants/colors";
+import { getCourses } from "../src/services/api";
 
 interface Course {
+  id: number;
   name: string;
   code: string;
   credits: number;
@@ -27,87 +30,89 @@ interface Course {
   lessons: string[];
 }
 
-const courses: Course[] = [
-  {
-    name: "Цифрлық маркетинг",
-    code: "CS-201",
-    credits: 3,
-    icon: "📣",
-    instructor: "А. Сәтбаев",
-    description: "SMM, таргет жарнама, аналитика және цифрлық маркетинг негіздері.",
-    lessons: ["1-сабақ: Маркетингке кіріспе", "2-сабақ: Таргет және SMM", "3-сабақ: Аналитика"],
-  },
-  {
-    name: "Дизайнды үйрену",
-    code: "CS-202",
-    credits: 3,
-    icon: "🎨",
-    instructor: "Д. Нұрланова",
-    description: "UI/UX дизайн, типографика, түстер теориясы және прототиптеу.",
-    lessons: ["1-сабақ: Композиция және түстер", "2-сабақ: Типографика", "3-сабақ: Figma прототип"],
-  },
-  {
-    name: "Жасанды интеллект",
-    code: "CS-203",
-    credits: 3,
-    icon: "🤖",
-    instructor: "М. Төлеуов",
-    description: "Машиналық оқыту, нейрондық желілер және заманауи AI модельдері.",
-    lessons: ["1-сабақ: AI негіздері", "2-сабақ: Машиналық оқыту", "3-сабақ: Нейрондық желілер"],
-  },
-  {
-    name: "Бағдарламалық қамтуды басқару",
-    code: "CS-204",
-    credits: 3,
-    icon: "💻",
-    instructor: "Е. Қасымов",
-    description: "Agile/Scrum әдіснамалары, командалық жұмыс және жобаны басқару.",
-    lessons: ["1-сабақ: SDLC және Agile", "2-сабақ: Scrum спринттері", "3-сабақ: Сапаны бақылау"],
-  },
-  {
-    name: "Цифрлық логистика",
-    code: "CS-205",
-    credits: 3,
-    icon: "📦",
-    instructor: "С. Әлімова",
-    description: "Жеткізу тізбегін автоматтандыру, қойма есебі және логистикалық жүйелер.",
-    lessons: ["1-сабақ: Цифрлық логистика", "2-сабақ: Қойманы басқару", "3-сабақ: Маршрутты оңтайландыру"],
-  },
-  {
-    name: "Физика",
-    code: "PHY-101",
-    credits: 3,
-    icon: "⚛️",
-    instructor: "Б. Оспанов",
-    description: "Механика, электромагнетизм және кванттық физиканың негізгі заңдары.",
-    lessons: ["1-сабақ: Кинематика және динамика", "2-сабақ: Электр және магнетизм", "3-сабақ: Толқындар"],
-  },
-  {
-    name: "Математика",
-    code: "MAT-101",
-    credits: 3,
-    icon: "∑",
-    instructor: "Г. Жұмабаева",
-    description: "Математикалық анализ, сызықтық алгебра және ықтималдық теориясы.",
-    lessons: ["1-сабақ: Шектер және туындылар", "2-сабақ: Матрицалар", "3-сабақ: Ықтималдық"],
-  },
-];
+interface ApiCourse {
+  id: number;
+  title: string;
+  teacher: string;
+  credits: number;
+  code?: string;
+  icon?: string;
+  description?: string;
+  lessons?: string[];
+}
 
 export default function CoursesScreen() {
   const { t } = useLanguage();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCourse, setSelectedCourse] =
+    useState<Course | null>(null);
+
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
+
+  // Серверден курстарды алу
+  const loadCourses = useCallback(async () => {
+    try {
+      setError("");
+
+      const data: ApiCourse[] = await getCourses();
+
+      // API деректерін экран форматына келтіру
+      const formattedCourses: Course[] = data.map(
+        (course) => ({
+          id: course.id,
+          name: course.title,
+          code: course.code || `CS-${course.id}`,
+          credits: course.credits,
+          icon: course.icon || "📚",
+          instructor: course.teacher,
+          description:
+            course.description || "Курс туралы ақпарат",
+          lessons: course.lessons || [],
+        })
+      );
+
+      setCourses(formattedCourses);
+    } catch (err) {
+      console.log("API қатесі:", err);
+      setError("Курстарды жүктеу мүмкін болмады");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCourses();
+  }, [loadCourses]);
+
+  // Тізімді төмен тартып жаңарту
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadCourses();
+  };
+
+  // Курстарды іздеу
   const filteredCourses = courses.filter((course) => {
     const q = searchQuery.toLowerCase().trim();
+
     if (!q) return true;
+
     return (
       course.name.toLowerCase().includes(q) ||
       course.code.toLowerCase().includes(q)
     );
   });
 
+  // Таңдалған курстың толық ақпараты
   if (selectedCourse) {
+    const currentCourse =
+      courses.find((c) => c.id === selectedCourse.id) ||
+      selectedCourse;
+
     return (
       <SafeAreaView style={styles.container}>
         <ScrollView
@@ -119,33 +124,66 @@ export default function CoursesScreen() {
             onPress={() => setSelectedCourse(null)}
             activeOpacity={0.75}
           >
-            <Ionicons name="arrow-back" size={20} color={COLORS.text} />
-            <Text style={styles.backText}>Курстарға қайту</Text>
+            <Ionicons
+              name="arrow-back"
+              size={20}
+              color={COLORS.text}
+            />
+            <Text style={styles.backText}>
+              Курстарға қайту
+            </Text>
           </TouchableOpacity>
 
           <View style={styles.detailCard}>
             <View style={styles.detailHeader}>
               <View style={styles.courseIcon}>
-                <Text style={styles.iconText}>{selectedCourse.icon}</Text>
+                <Text style={styles.iconText}>
+                  {currentCourse.icon}
+                </Text>
               </View>
+
               <View style={styles.courseInfo}>
-                <Text style={styles.detailTitle}>{selectedCourse.name}</Text>
+                <Text style={styles.detailTitle}>
+                  {currentCourse.name}
+                </Text>
+
                 <Text style={styles.courseDetails}>
-                  {selectedCourse.code} • {selectedCourse.credits} {t("credits")}
+                  {currentCourse.code} •{" "}
+                  {currentCourse.credits} {t("credits")}
                 </Text>
               </View>
             </View>
 
-            <Text style={styles.metaText}>Оқытушы: {selectedCourse.instructor}</Text>
-            <Text style={styles.descriptionText}>{selectedCourse.description}</Text>
+            <Text style={styles.metaText}>
+              Оқытушы: {currentCourse.instructor}
+            </Text>
 
-            <Text style={styles.sectionTitle}>Сабақтар тізімі</Text>
-            {selectedCourse.lessons.map((lesson, idx) => (
-              <View key={idx} style={styles.lessonItem}>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#8E24AA" />
-                <Text style={styles.lessonText}>{lesson}</Text>
-              </View>
-            ))}
+            <Text style={styles.descriptionText}>
+              {currentCourse.description}
+            </Text>
+
+            <Text style={styles.sectionTitle}>
+              Сабақтар тізімі
+            </Text>
+
+            {currentCourse.lessons.length > 0 ? (
+              currentCourse.lessons.map((lesson, idx) => (
+                <View key={idx} style={styles.lessonItem}>
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={18}
+                    color="#8E24AA"
+                  />
+                  <Text style={styles.lessonText}>
+                    {lesson}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.descriptionText}>
+                Әзірге сабақтар қосылмаған
+              </Text>
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -157,11 +195,22 @@ export default function CoursesScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#8E24AA"
+          />
+        }
       >
         <Header title={t("Courses")} />
 
         <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={18} color="#999" />
+          <Ionicons
+            name="search-outline"
+            size={18}
+            color="#999"
+          />
 
           <TextInput
             placeholder={t("Search")}
@@ -172,28 +221,61 @@ export default function CoursesScreen() {
           />
         </View>
 
-        {filteredCourses.map((course) => (
-          <TouchableOpacity
-            key={course.code}
-            style={styles.courseCard}
-            activeOpacity={0.75}
-            onPress={() => setSelectedCourse(course)}
-          >
-            <View style={styles.courseIcon}>
-              <Text style={styles.iconText}>{course.icon}</Text>
-            </View>
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color="#8E24AA"
+            style={{ marginTop: 40 }}
+          />
+        ) : error ? (
+          <View style={styles.messageContainer}>
+            <Text style={styles.messageText}>{error}</Text>
 
-            <View style={styles.courseInfo}>
-              <Text style={styles.courseName}>{course.name}</Text>
-
-              <Text style={styles.courseDetails}>
-                {course.code} • {course.credits} {t("credits")}
+            <TouchableOpacity onPress={loadCourses}>
+              <Text style={styles.retryText}>
+                Қайта жүктеу
               </Text>
-            </View>
+            </TouchableOpacity>
+          </View>
+        ) : filteredCourses.length === 0 ? (
+          <View style={styles.messageContainer}>
+            <Text style={styles.messageText}>
+              Курстар табылмады
+            </Text>
+          </View>
+        ) : (
+          filteredCourses.map((course) => (
+            <TouchableOpacity
+              key={course.id}
+              style={styles.courseCard}
+              activeOpacity={0.75}
+              onPress={() => setSelectedCourse(course)}
+            >
+              <View style={styles.courseIcon}>
+                <Text style={styles.iconText}>
+                  {course.icon}
+                </Text>
+              </View>
 
-            <Ionicons name="chevron-forward" size={18} color="#999" />
-          </TouchableOpacity>
-        ))}
+              <View style={styles.courseInfo}>
+                <Text style={styles.courseName}>
+                  {course.name}
+                </Text>
+
+                <Text style={styles.courseDetails}>
+                  {course.code} • {course.credits}{" "}
+                  {t("credits")}
+                </Text>
+              </View>
+
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color="#999"
+              />
+            </TouchableOpacity>
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -335,5 +417,22 @@ const styles = StyleSheet.create({
   lessonText: {
     fontSize: 12,
     color: COLORS.text,
+  },
+
+  messageContainer: {
+    padding: 25,
+    alignItems: "center",
+  },
+
+  messageText: {
+    fontSize: 13,
+    color: COLORS.textLight,
+    textAlign: "center",
+  },
+
+  retryText: {
+    color: "#8E24AA",
+    fontWeight: "700",
+    marginTop: 15,
   },
 });
