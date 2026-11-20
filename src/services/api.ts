@@ -2,13 +2,19 @@
 const API_URL = "http://10.0.2.2:3000/api";
 
 async function request<T>(endpoint: string): Promise<T> {
-  const response = await fetch(`${API_URL}${endpoint}`);
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`);
 
-  if (!response.ok) {
-    throw new Error(`API қатесі: ${response.status}`);
+    if (!response.ok) {
+      throw new Error(`API қатесі: ${response.status}`);
+    }
+
+    const data: T = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Сервермен байланыс қатесі:", error);
+    throw error;
   }
-
-  return response.json();
 }
 
 export interface Course {
